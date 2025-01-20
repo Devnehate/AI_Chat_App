@@ -12,21 +12,38 @@ export const createProject = async (req, res) => {
     }
 
     try {
-        
+
         const { name } = req.body;
         const loggedInUser = await userModel.findOne({ email: req.user.email });
         const userId = loggedInUser._id;
-        
+
         const newProject = await projectService.createProject({
             name,
             userId
         });
-        
+
         res.status(201).json(newProject);
     }
     catch (error) {
         console.log(error);
-        
+
+        res.status(400).json(error.message);
+    }
+}
+
+export const getAllProjects = async (req, res) => {
+    try {
+
+        const loggedInUser = await userModel.findOne({ email: req.user.email })
+
+        const allUserProjects = await projectService.getAllProjectsbByUserId({
+            userId: loggedInUser._id
+        });
+
+        res.status(200).json({projects: allUserProjects});
+
+    } catch (error) {
+        console.log(error);
         res.status(400).json(error.message);
     }
 }
