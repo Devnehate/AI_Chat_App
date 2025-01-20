@@ -1,23 +1,21 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle login logic here
     console.log('Email:', email, 'Password:', password);
-    // On successful login, navigate to the dashboard or home page
     navigate('/dashboard');
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
       <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium mb-2">Email</label>
@@ -45,15 +43,15 @@ const Login = () => {
             type="submit"
             className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold"
           >
-            Login
+            Register
           </button>
         </form>
         <p className="mt-4 text-center">
-          Don&apos;t have an account? <Link to="/register" className="text-blue-500 hover:underline">Create one</Link>
+          Already have an account? <Link to="/login" className="text-blue-500 hover:underline">login here</Link>
         </p>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default Register;
