@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom'
 import axios from '../config/axios'
-import {initializeSocket} from '../config/socket'
+import { initializeSocket, receiveMessage, sendMessage } from '../config/socket'
+import { UserContext } from '../context/user.context'
 
 const Project = ({ navigate }) => {
     const location = useLocation();
@@ -11,6 +12,8 @@ const Project = ({ navigate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState([]);
     const [project, setProject] = useState(location.state.project);
+    const [message, setMessage] = useState('');
+    const { user } = useContext(UserContext);
 
     const [users, setUsers] = useState([]);
 
@@ -42,9 +45,22 @@ const Project = ({ navigate }) => {
             )
     }
 
+    const send = () => {
+        sendMessage('project-message', {
+            message,
+            sender: user._id
+        });
+
+        setMessage('');
+    }
+
     useEffect(() => {
 
-        initializeSocket();
+        initializeSocket(project._id);
+
+        receiveMessage('project-message', data => {
+            console.log(data)
+        });
 
         axios.get(`/projects/get-project/${location.state.project._id}`)
             .then(res => {
@@ -90,9 +106,13 @@ const Project = ({ navigate }) => {
                     </div>
                     <div className="input-field w-full flex">
                         <input
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
                             className='p-2 px-4 border-none rounded-tl-md outline-none flex-grow'
                             type="text" placeholder='Enter message' />
-                        <button className=' px-5 bg-slate-950 rounded-tr-md text-white'>
+                        <button
+                            onClick={send}
+                            className=' px-5 bg-slate-950 rounded-tr-md text-white'>
                             <i className='ri-send-plane-fill'></i>
                         </button>
                     </div>
