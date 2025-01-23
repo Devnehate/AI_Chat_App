@@ -1,9 +1,24 @@
-import React, { useState, useContext } from 'react'
-import { useEffect } from 'react';
+/* eslint-disable react/no-children-prop */
+import React, { useState, useContext, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import axios from '../config/axios'
 import { initializeSocket, receiveMessage, sendMessage } from '../config/socket'
 import { UserContext } from '../context/user.context'
+import Markdown from 'markdown-to-jsx'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/monokai.css'
+
+function SyntaxHighlightedCode(props) {
+    const ref = useRef(null)
+
+    React.useEffect(() => {
+        if (ref.current && props.className?.includes('lang-')) {
+            hljs.highlightElement(ref.current)
+        }
+    }, [props.className, props.children])
+
+    return <code {...props} ref={ref} />
+}
 
 const Project = ({ navigate }) => {
     const location = useLocation();
@@ -15,6 +30,7 @@ const Project = ({ navigate }) => {
     const [message, setMessage] = useState('');
     const { user } = useContext(UserContext);
     const messageBox = React.createRef();
+    const [messages, setMessages] = useState([]);
 
     const [users, setUsers] = useState([]);
 
@@ -52,7 +68,7 @@ const Project = ({ navigate }) => {
             sender: user
         });
 
-        appendOutgoingMessage(message);
+        setMessages(prevMessages => [...prevMessages, { sender: user, message }]);
 
         setMessage('');
     }
@@ -63,7 +79,7 @@ const Project = ({ navigate }) => {
 
         receiveMessage('project-message', data => {
             console.log(data)
-            appendIncomingMessage(data);
+            setMessages(prevMessages => [...prevMessages, data]);
         });
 
         axios.get(`/projects/get-project/${location.state.project._id}`)
@@ -82,33 +98,6 @@ const Project = ({ navigate }) => {
             })
     }, []);
 
-    function appendIncomingMessage(messageObject) {
-
-        const messageBox = document.querySelector('.message-box');
-
-        const message = document.createElement('div');
-        message.className = 'message max-w-56 flex flex-col p-2 bg-slate-50 w-fit rounded-md';
-        message.innerHTML = `
-            <small class='opacity-65 text-xs'>${messageObject.sender.email}</small>
-            <p class='text-sm'>${messageObject.message}</p>
-        `;
-        messageBox.appendChild(message);
-        scrollToBottom();
-    }
-
-    function appendOutgoingMessage(message) {
-        const messageBox = document.querySelector('.message-box');
-
-        const messageElement = document.createElement('div');
-        messageElement.className = 'ml-auto message max-w-56 flex flex-col p-2 bg-slate-50 w-fit rounded-md';
-        messageElement.innerHTML = `
-            <small class='opacity-65 text-xs'>${user.email}</small>
-            <p class='text-sm'>${message}</p>
-        `;
-        messageBox.appendChild(messageElement);
-        scrollToBottom();
-    }
-
     function scrollToBottom() {
         messageBox.current.scrollTop = messageBox.current.scrollHeight;
     }
@@ -116,7 +105,7 @@ const Project = ({ navigate }) => {
     return (
         <main className='h-screen w-screen flex'>
             <section className="left relative flex flex-col h-screen min-w-80 bg-slate-300">
-                <header className='flex justify-between items-center p-2 px-4 w-full bg-slate-100 absolute top-0'>
+                <header className='flex justify-between items-center p-2 px-4 w-full bg-slate-100 rounded-b-md absolute top-0'>
                     <button className='flex gap-2' onClick={() => setIsModalOpen(true)}>
                         <i className='ri-add-fill mr-1'></i>
                         <p>Add Collaborator</p>
@@ -132,6 +121,30 @@ const Project = ({ navigate }) => {
                     <div
                         ref={messageBox}
                         className="message-box p-1 flex-grow flex flex-col gap-1 overflow-auto max-h-full scrollbar-thin scrollbar-thumb-slate-600 scrollbar-hide">
+
+                        {messages.map((msg, index) => (
+                            <div key={index} className={`${msg.sender._id === 'ai' ? 'max-w-80' : 'max-w-52'} ${msg.sender._id == user._id.toString() && 'ml-auto'} message  flex flex-col p-2 bg-slate-50 w-fit rounded-md`}>
+                                <small className='opacity-65 text-xs'>{msg.sender.email}</small>
+                                <p className='text-sm'>
+                                    {msg.sender._id === 'ai' ?
+                                        <div className='overflow-auto bg-slate-950 rounded p-2 text-white'>
+                                            <Markdown
+                                                children={msg.message}
+                                                options={{
+                                                    overrides: {
+                                                        code: {
+                                                            component: SyntaxHighlightedCode
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        :
+                                        msg.message
+                                    }
+                                </p>
+                            </div>
+                        ))}
                     </div>
                     <div className="input-field w-full flex absolute bottom-0">
                         <input
@@ -207,5 +220,4 @@ const Project = ({ navigate }) => {
         </main>
     )
 }
-
 export default Project
