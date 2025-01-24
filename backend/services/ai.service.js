@@ -53,7 +53,9 @@ const model = genAI.getGenerativeModel({
             }
         ",
 
-        "buildCommand"::{
+    }
+    },
+     "buildCommand"::{
         mainItem:"npm",
         commands:["install"]
         },
@@ -62,9 +64,6 @@ const model = genAI.getGenerativeModel({
         mainItem:"npm",
         commands:["app.js"]
         }
-
-    }
-    }
     }
 
     </example>
