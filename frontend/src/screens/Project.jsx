@@ -28,11 +28,25 @@ const Project = ({ navigate }) => {
     const [selectedUserId, setSelectedUserId] = useState([]);
     const [project, setProject] = useState(location.state.project);
     const [message, setMessage] = useState('');
+    const [messages, setMessages] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [fileTree, setFileTree] = useState({
+        "app.js": {
+            content: `const express = require('express');`
+        },
+        "package.json": {
+            content: `{
+                         "name": "temp_server",
+                        }`
+
+        }
+    });
+    const [currentFile, setCurrentFile] = useState(null);
+    const [openFiles, setOpenFiles] = useState([]);
+
     const { user } = useContext(UserContext);
     const messageBox = React.createRef();
-    const [messages, setMessages] = useState([]);
 
-    const [users, setUsers] = useState([]);
 
     const handleUserClick = (id) => {
         setSelectedUserId(prevSelectedUserId => {
@@ -71,6 +85,24 @@ const Project = ({ navigate }) => {
         setMessages(prevMessages => [...prevMessages, { sender: user, message }]);
 
         setMessage('');
+    }
+
+    function WriteAiMessage(message) {
+        const messageObject = JSON.parse(message);
+        return (
+            <div className='overflow-auto bg-slate-950 rounded p-2 text-white'>
+                <Markdown
+                    children={messageObject.text}
+                    options={{
+                        overrides: {
+                            code: {
+                                component: SyntaxHighlightedCode
+                            }
+                        }
+                    }}
+                />
+            </div>
+        )
     }
 
     useEffect(() => {
@@ -127,18 +159,7 @@ const Project = ({ navigate }) => {
                                 <small className='opacity-65 text-xs'>{msg.sender.email}</small>
                                 <p className='text-sm'>
                                     {msg.sender._id === 'ai' ?
-                                        <div className='overflow-auto bg-slate-950 rounded p-2 text-white'>
-                                            <Markdown
-                                                children={msg.message}
-                                                options={{
-                                                    overrides: {
-                                                        code: {
-                                                            component: SyntaxHighlightedCode
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                        </div>
+                                        WriteAiMessage(msg.message)
                                         :
                                         msg.message
                                     }
@@ -185,6 +206,61 @@ const Project = ({ navigate }) => {
                     </div>
                 </div>
             </section>
+
+            <section className='right bg-red-50 flex flex-grow h-full'>
+                <div className="explorer h-full max-w-64 min-w-52 bg-slate-200">
+                    <div className="file-tree w-full">
+                        {
+                            Object.keys(fileTree).map((file, index) => (
+                                <button
+                                    onClick={() => {
+                                        setCurrentFile(file)
+                                        setOpenFiles([...new Set([...openFiles,file])])
+                                    }}
+                                    key={index} className='file p-2 flex w-full px-4 mb-1 rounded font-semibold bg-slate-300 cursor-pointer'>
+                                    <p className='font-semibold text-lg'>{file}</p>
+                                </button>
+                            ))
+                        }
+
+                    </div>
+                </div>
+                {currentFile && (
+                    <div className="code-editor flex flex-col flex-grow h-full">
+                        <div className="top flex">
+                            {
+                                openFiles.map((file, index) => (
+                                    <button
+                                        onClick={() => setCurrentFile(file)}
+                                        key={index}
+                                        className={`open-file p-2 flex w-fit px-4 font-semibold bg-slate-300 cursor-pointer ${currentFile === file ? 'bg-slate-400' : ''}`}>
+                                        <p className='font-semibold text-lg'>{file}</p>
+                                    </button>
+                                ))
+                            }
+                        </div>
+                        <div className="bottom flex flex-grow">
+                            {
+                                fileTree[currentFile] && (
+                                    <textarea
+                                        value={fileTree[currentFile].content}
+                                        onChange={(e) => {
+                                            setFileTree(prevFileTree => ({
+                                                ...prevFileTree,
+                                                [currentFile]: {
+                                                    content: e.target.value
+                                                }
+                                            }))
+                                        }}
+                                        className='w-full h-full p-4 outline-none bg-slate-50 text-slate-900'
+                                    ></textarea>
+                                )
+                            }
+                        </div>
+                    </div>
+                )}
+            </section>
+
 
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
