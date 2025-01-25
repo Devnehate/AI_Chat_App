@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/no-children-prop */
 import React, { useState, useContext, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -7,7 +8,7 @@ import { UserContext } from '../context/user.context'
 import Markdown from 'markdown-to-jsx'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/monokai.css'
-import {getWebContainer} from '../config/webContainer';
+import { getWebContainer } from '../config/webContainer';
 
 function SyntaxHighlightedCode(props) {
     const ref = useRef(null)
@@ -106,14 +107,15 @@ const Project = ({ navigate }) => {
                 .then(container => {
                     setWebContainer(container);
                     console.log("container started");
-                    
+
                 }).catch(err => {
                     console.log(err)
                 });
-                
+
         }
 
         receiveMessage('project-message', data => {
+            console.log(data)
             const message = JSON.parse(data.message);
 
             console.log(message);
@@ -222,7 +224,7 @@ const Project = ({ navigate }) => {
 
             <section className='right bg-red-50 flex flex-grow h-full'>
                 <div className="explorer h-full max-w-64 min-w-52 bg-slate-200">
-                    <div className="file-tree w-full">
+                    <div className="file-tree p-2 w-full">
                         {
                             Object.keys(fileTree).map((file, index) => (
                                 <button
@@ -238,9 +240,12 @@ const Project = ({ navigate }) => {
 
                     </div>
                 </div>
-                {currentFile && (
-                    <div className="code-editor flex flex-col flex-grow h-full">
-                        <div className="top flex">
+
+                <div className="code-editor flex flex-col flex-grow h-full">
+
+                    <div className="top flex justify-between w-full">
+
+                        <div className="files flex">
                             {
                                 openFiles.map((file, index) => (
                                     <button
@@ -252,38 +257,70 @@ const Project = ({ navigate }) => {
                                 ))
                             }
                         </div>
-                        <div className="bottom flex flex-grow max-w-full shrink overflow-auto">
-                            {
-                                fileTree[currentFile] && (
-                                    <div className='code-editor-area h-full overflow-auto flex-grow bg-slate-50'>
-                                        <pre className='hljs h-full'>
-                                            <code className='hljs h-full outline-none'
-                                                contentEditable
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => {
-                                                    const updatedContent = e.target.innerText;
-                                                    setFileTree(prevFileTree => ({
-                                                        ...prevFileTree,
-                                                        [currentFile]: {
-                                                            ...prevFileTree[currentFile],
-                                                            content: updatedContent
-                                                        }
-                                                    }));
-                                                }}
-                                                dangerouslySetInnerHTML={{ __html: hljs.highlight('javascript', fileTree[currentFile].file.contents).value }}
-                                                style={{
-                                                    whiteSpace: 'pre-wrap',
-                                                    paddingBottom: '25rem',
-                                                    counterSet: 'line-numbering'
-                                                }}
-                                            ></code>
-                                        </pre>
-                                    </div>
-                                )
-                            }
+
+                        <div className="actions flex gap-2">
+                            <button
+                                onClick={async () => {
+                                    await webContainer.mount(fileTree);
+                                    
+                                    const installProcess = await webContainer.spawn("npm", ["install"]);
+
+                                    installProcess.output.pipeTo(new WritableStream({
+                                        write(chunk) {
+                                            console.log(chunk)
+                                        }
+                                    }))
+
+                                    const runProcess = await webContainer.spawn("npm", ["start"]);
+
+
+                                    runProcess.output.pipeTo(new WritableStream({
+                                        write(chunk) {
+                                            console.log(chunk);
+                                        }
+                                    })
+                                    )
+                                }
+                                }
+                                className='p-2 px-4 bg-slate-300 rounded-md text-white'
+                            >
+                                run
+                            </button>
                         </div>
+
                     </div>
-                )}
+                    <div className="bottom flex flex-grow max-w-full shrink overflow-auto">
+                        {
+                            fileTree[currentFile] && (
+                                <div className='code-editor-area h-full overflow-auto flex-grow bg-slate-50'>
+                                    <pre className='hljs h-full'>
+                                        <code className='hljs h-full outline-none'
+                                            contentEditable
+                                            suppressContentEditableWarning
+                                            onBlur={(e) => {
+                                                const updatedContent = e.target.innerText;
+                                                setFileTree(prevFileTree => ({
+                                                    ...prevFileTree,
+                                                    [currentFile]: {
+                                                        ...prevFileTree[currentFile],
+                                                        content: updatedContent
+                                                    }
+                                                }));
+                                            }}
+                                            dangerouslySetInnerHTML={{ __html: hljs.highlight('javascript', fileTree[currentFile].file.contents).value }}
+                                            style={{
+                                                whiteSpace: 'pre-wrap',
+                                                paddingBottom: '25rem',
+                                                counterSet: 'line-numbering'
+                                            }}
+                                        ></code>
+                                    </pre>
+                                </div>
+                            )
+                        }
+                    </div>
+                </div>
+
             </section>
 
 
