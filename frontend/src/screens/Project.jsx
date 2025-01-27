@@ -36,6 +36,8 @@ const Project = ({ navigate }) => {
     const [currentFile, setCurrentFile] = useState(null);
     const [openFiles, setOpenFiles] = useState([]);
     const [webContainer, setWebContainer] = useState(null);
+    const [iframeUrl, setIframeUrl] = useState(null);
+    const [runProcess, setRunProcess] = useState(null);
 
     const { user } = useContext(UserContext);
     const messageBox = React.createRef();
@@ -262,7 +264,7 @@ const Project = ({ navigate }) => {
                             <button
                                 onClick={async () => {
                                     await webContainer.mount(fileTree);
-                                    
+
                                     const installProcess = await webContainer.spawn("npm", ["install"]);
 
                                     installProcess.output.pipeTo(new WritableStream({
@@ -271,15 +273,26 @@ const Project = ({ navigate }) => {
                                         }
                                     }))
 
-                                    const runProcess = await webContainer.spawn("npm", ["start"]);
+                                    if (runProcess) {
+                                        runProcess.kill();
+                                    }
+
+                                    let tempRunProcess = await webContainer.spawn("npm", ["start"]);
 
 
-                                    runProcess.output.pipeTo(new WritableStream({
+                                    tempRunProcess.output.pipeTo(new WritableStream({
                                         write(chunk) {
                                             console.log(chunk);
                                         }
                                     })
                                     )
+
+                                    setRunProcess(tempRunProcess);
+
+                                    webContainer.on('server-ready', (port, url) => {
+                                        console.log(port, url)
+                                        setIframeUrl(url)
+                                    })
                                 }
                                 }
                                 className='p-2 px-4 bg-slate-300 rounded-md text-white'
@@ -303,7 +316,10 @@ const Project = ({ navigate }) => {
                                                     ...prevFileTree,
                                                     [currentFile]: {
                                                         ...prevFileTree[currentFile],
-                                                        content: updatedContent
+                                                        file: {
+                                                            ...prevFileTree[currentFile].file,
+                                                            contents: updatedContent
+                                                        }
                                                     }
                                                 }));
                                             }}
@@ -320,6 +336,21 @@ const Project = ({ navigate }) => {
                         }
                     </div>
                 </div>
+
+                {
+                    iframeUrl && webContainer &&
+                    (
+                        <div className='flex flex-col h-full min-w-96'>
+                            <div className="address-bar">
+                                <input type='text'
+                                    onChange={(e) => setIframeUrl(e.target.value)}
+                                    value={iframeUrl}
+                                    className='w-full p-2 px-4 bg-slate-400'></input>
+                            </div>
+                            <iframe src={iframeUrl} className='h-full w-full'></iframe>
+                        </div>
+                    )
+                }
 
             </section>
 
