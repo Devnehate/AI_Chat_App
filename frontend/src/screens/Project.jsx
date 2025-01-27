@@ -151,6 +151,18 @@ const Project = ({ navigate }) => {
         messageBox.current.scrollTop = messageBox.current.scrollHeight;
     }
 
+    function saveFileTree(ft) {
+        axios.put('/projects/update-file-tree', {
+            projectId: project._id,
+            fileTree: ft
+        })
+            .then(res => {
+                console.log(res.data)
+            }).catch(err => {
+                console.log(err)
+            })
+    }
+
     return (
         <main className='h-screen w-screen flex'>
             <section className="left relative flex flex-col h-screen min-w-80 bg-slate-300">
@@ -312,16 +324,20 @@ const Project = ({ navigate }) => {
                                             suppressContentEditableWarning
                                             onBlur={(e) => {
                                                 const updatedContent = e.target.innerText;
-                                                setFileTree(prevFileTree => ({
-                                                    ...prevFileTree,
+                                                const ft = {
+                                                    ...fileTree,
                                                     [currentFile]: {
-                                                        ...prevFileTree[currentFile],
+                                                        ...fileTree[currentFile],
                                                         file: {
-                                                            ...prevFileTree[currentFile].file,
+                                                            ...fileTree[currentFile].file,
                                                             contents: updatedContent
                                                         }
                                                     }
-                                                }));
+                                                }
+                                                
+                                                setFileTree(ft);
+
+                                                saveFileTree(ft)
                                             }}
                                             dangerouslySetInnerHTML={{ __html: hljs.highlight('javascript', fileTree[currentFile].file.contents).value }}
                                             style={{
